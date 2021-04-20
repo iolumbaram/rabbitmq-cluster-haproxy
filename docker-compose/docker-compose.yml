@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  rabbit-1:
+    image: rabbitmq-node
+    container_name: rabbit-1
+    hostname: rabbit-1
+    environment:
+      - RABBITMQ_ERLANG_COOKIE=pddodp
+    ports:
+      - "8081:15671"
+      - "4369:4369"
+      - "25672:25672"
+    networks: 
+    - cluster-network
+
+  rabbit-2:
+    image: rabbitmq-node
+    container_name: rabbit-2
+    hostname: rabbit-2
+    links:
+      - rabbit-1
+    environment:
+      - CLUSTERED=true
+      - CLUSTER_WITH=rabbit-1
+      - RAM_NODE=true
+      - RABBITMQ_ERLANG_COOKIE=pddodp
+    ports:
+      - "8082:15671"
+      - "4370:4369"
+      - "25673:25672"
+    networks: 
+    - cluster-network
+
+  rabbit-3:
+    image: rabbitmq-node
+    container_name: rabbit-3
+    hostname: rabbit-3
+    links:
+      - rabbit-1
+      - rabbit-2
+    environment:
+      - CLUSTERED=true
+      - CLUSTER_WITH=rabbit-1
+      - RABBITMQ_ERLANG_COOKIE=pddodp
+    ports:
+      - "8083:15671"
+      - "4371:4369" 
+      - "25674:25672"
+    networks: 
+    - cluster-network
+
+  haproxy:
+    image: haproxy-rabbitmq-cluster
+    container_name: haproxy
+    links:
+      - rabbit-1
+      - rabbit-2
+      - rabbit-3
+    hostname: haproxy
+    ports:
+      - "5672:5672"
+      - "1936:1936"
+    networks: 
+    - cluster-network
+
+networks:
+ cluster-network:
+  driver: bridge
